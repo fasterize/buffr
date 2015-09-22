@@ -1,25 +1,26 @@
-var Duplex = require('stream').Duplex;
-var inherits = require('util').inherits;
+var Transform = require('stream').Transform,
+    util = require('util');
 
-module.exports = Buffr;
-
-inherits(Buffr, Duplex);
-
-function Buffr (chunks) {
-  if (!(this instanceof Buffr)) { return new Buffr(chunks) }
-  Duplex.call(this);
+var Buffr = function(chunks) {
+  Transform.call(this);
 
   this.chunks = chunks || [];
 
-  this.chunks = !Array.isArray(this.chunks)
-    ? [this.chunks]
-    : this.chunks;
-
-  this.on('pipe', this._onPipe.bind(this));
-  if(chunks) {
+  if (chunks) {
     this.load();
   }
-}
+};
+util.inherits(Buffr, Transform);
+
+Buffr.prototype._transform = function(chunk, encoding, callback) {
+  this.chunks.push(chunk);
+  this.push(chunk);
+  callback();
+};
+
+Buffr.prototype.duplicate = function () {
+  return new Buffr(this.chunks);
+};
 
 //
 // Load chunks that were passed into the constructor as a new stream
@@ -31,39 +32,4 @@ Buffr.prototype.load = function () {
   this.push(null);
 };
 
-//
-// If we are piped to buffer those chunks in our own array JUST for duplication
-// purposes
-//
-Buffr.prototype._onPipe = function (src) {
-  var self = this;
-
-  src.on('data', function (data) {
-    self.chunks.push(data);
-    self.push(data);
-  });
-
-  src.on('end', function () {
-    self.push(null);
-  });
-
-};
-
-Buffr.prototype.duplicate = function () {
-  return new Buffr(this.chunks);
-};
-
-//
-// Destroy the internal buffer and end the stream
-//
-Buffr.prototype.destroy = function () {
-  this.chunks.length = 0;
-};
-
-//
-// Ignore this because we just care when we are piped to and doing our own shit
-// because obviously internally they can't figure it out
-//
-Buffr.prototype._write = function (data, enc, cb) {};
-
-Buffr.prototype._read = function (n) {}
+module.exports = Buffr;
