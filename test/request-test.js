@@ -53,8 +53,15 @@ test('request a server, buffer the request and respond appropriately', function 
 
 test('request a server that proxies to another server, should proxy correctly and return the initial data', function (t) {
   t.plan(1);
+
+  var body = '------------------------------------------------------------------------------------------------------------------------------';
+
+  for (var i = 0; i <= 10000; i++) {
+    body = body + '------------------------------------------------------------------------------------------------------------------------------';
+  };
+
   var server,
-      payload = { wtf: 'bro', whats: 'your deal' };
+      payload = { wtf: 'bro', whats: 'your deal', data: body };
 
   var proxy = new HttpProxy();
   proxy.on('error', cleanup);
